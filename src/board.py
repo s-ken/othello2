@@ -3,6 +3,9 @@
 import pygame
 import othello
 
+#######################################################################################################################
+# 盤面状態に関する情報を事前計算して格納
+# e.g. ある盤面状態の時に位置(x,y)に石が置かれた場合の盤面状態の遷移先, ある盤面状態の時の確定石数や着手可能手数や石差
 class Index:
   def __init__(self):
     PATTERNS_NUM = 3 ** 8
@@ -140,6 +143,9 @@ class Index:
     else:
       return self.__difference[code]
 
+#######################################################################################################################
+# インデックスボード（= 盤面を分割・符号化して状態を表現）
+# Indexを用いた高速な状態遷移
 class Board:
   def __init__(self, visible):
     if visible:   # GUI関連の設定
@@ -158,13 +164,17 @@ class Board:
       pygame.display.set_caption('Othello')
       pygame.mouse.set_visible(True)
 
+    # 盤面状態の初期値
     self.__INITIAL_STATE = [  6560, 6560, 6560, 6371, 6425, 6560, 6560, 6560, # 水平
                             6560, 6560, 6560, 6371, 6425, 6560, 6560, 6560, # 垂直
                             6560, 6560, 6560, 6560, 6533, 6344, 6533, 6560, 6560, 6560, 6560,   # 斜め45°
                             6560, 6560, 6560, 6560, 6506, 6452, 6506, 6560, 6560, 6560, 6560 ]  # 斜め135°
     self.__INITIAL_EMPCELL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,29,30,31,32,33,34,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
-    self.__board  = [6560] * 38
+
+    self.__board  = [None] * 38 # 盤面の実体
     self.__index  = Index()
+
+    # 3進ビット抽出処理高速化のためのルックアップテーブル
     self.__first3 = [i % (3**3) for i in range(6561)] # 3進8bitから下位3bitを得る
     self.__first4 = [i % (3**4) for i in range(6561)]
     self.__first5 = [i % (3**5) for i in range(6561)]
@@ -261,15 +271,6 @@ class Board:
     return res
 
   # ==================== 評価関数関連 ====================
-  """
-  # 位置ベース(othello.Config.WEIGHTS)の評価値を返す.
-  def getEval(self, color):
-    res = 0
-    for i, code in enumerate(self.__board[:8]):
-      res += self.__index.getEval(i, code, color)
-    return res
-  """
-
   # 端の4辺中の確定石数を返す
   def get_settled(self, color):
     return (self.__index.get_settled(self.__board[0],color) + self.__index.get_settled(self.__board[7],color) +
@@ -318,7 +319,6 @@ class Board:
       self.__first3[self.__board[7]] + self.__first3[self.__board[6]]*27 + self.__first3[self.__board[5]]*729,
       self.__last3[self.__board[7]] + self.__last3[self.__board[6]]*27 + self.__last3[self.__board[5]]*729  # conrer3x3
       )
-  # ==================================================
 
   # ==================== Undo 関連 =====================
   def get_state(self):

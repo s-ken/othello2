@@ -10,6 +10,7 @@ import AI
 
 
 class Config:
+  # AIの強さに関するパラメータ
   MID_HEIGHT  = 7 # 中盤ゲーム木の高さ
   FIN_HEIGHT  = 14 # 終盤ゲーム木の高さの上限
   FIN_PHASE   = 60-FIN_HEIGHT # 終盤読み切りを開始するタイミング
@@ -24,12 +25,13 @@ class Config:
   INF           = sys.maxint
   POW3          = [3 ** i for i in range(8)]
 
+#######################################################################################################################
+# プレイヤーの着手処理
 class You():
-
   def __init__( self, board, color, opening_book ):
     self.__board = board                # boardへの参照
     self.__color = color                # 自分の色
-    self.__opening_book = opening_book  # 定石集への参照
+    self.__opening_book = opening_book  # 定石集への参照（Bookの更新のため）
 
   def can_put( self ):
     return len( self.__board.placeable_cells(self.__color) ) > 0
@@ -37,19 +39,27 @@ class You():
   def __str__( self ):
     return "You"
 
+  # GUIによる着手処理
+  # クリック地点で判定
   def take_turn( self, _ ):
     while 1:
       for event in pygame.event.get():
+
+        # ESCAPEキー -> 終了
         if ( event.type == KEYDOWN and event.key == K_ESCAPE ):
-          sys.exit()  # ESCAPEキーが押されたら終了
+          sys.exit()
+
+        # BACKSPACEキー -> Undo
         if ( event.type == KEYDOWN and event.key == K_BACKSPACE ):
-          raise UndoRequest() # BACKSPACEキーが押されたらUndo
+          raise UndoRequest()
+
+        # クリック -> 着手処理
         if ( event.type == MOUSEBUTTONDOWN ):
           xpos = int( pygame.mouse.get_pos()[0]/Config.CELL_WIDTH )
           ypos = int( pygame.mouse.get_pos()[1]/Config.CELL_WIDTH )
           if self.__board.placeable[xpos + ypos * 8]( self.__color ):
-            self.__board.store_state()   # boardの要素のstateを書き換える前に,各stateを保存する
-            self.__board.put[xpos + ypos * 8]( self.__color )  # 位置(xpos,ypos)に駒を置く
+            self.__board.store_state()   # 各stateを保存
+            self.__board.put[xpos + ypos * 8]( self.__color )  # (xpos,ypos)に駒を置く
             self.__board.update_empty_cells( xpos + ypos * 8 )
             if self.__opening_book.is_valid():
               self.__opening_book.proceed( xpos, ypos )  # 定石通りかどうかチェック
@@ -61,6 +71,8 @@ class UndoRequest(Exception):
   def __init__(self): 0
 
 
+#######################################################################################################################
+# ゲームの進行
 class Game:
   def __init__( self ):
     self.__board  = board.Board( True )
@@ -72,7 +84,7 @@ class Game:
     self.__turn = Config.BLACK
     self.__num_discs = 0
     self.__passed = False
-    self.__pos = -1
+    self.__pos = -1 # 直前の着手位置
     while 1:
       st = raw_input("Choose your color. (b/w) : ")
       if st == 'b':
@@ -87,6 +99,7 @@ class Game:
     self.__player[your_color]     = You( self.__board, your_color, self.__opening_book )
     self.__player[not your_color] = AI.AI( self.__board, not your_color, self.__opening_book, None )
 
+  # 1ゲーム実行
   def run( self ):
     while 1:
       self.__board.print_board( self.__pos, self.__turn%2 )
@@ -104,11 +117,12 @@ class Game:
         self.__num_discs += 1
       else:
         print self.__player[self.__turn%2], " passed."
-        if self.__passed:  # 二人ともパス->終了
+        if self.__passed:  # 二人ともパス -> 終了
           return
         self.__passed = True
       self.__turn += 1
 
+  # 結果出力（石数）
   def output(self):
     self.__board.print_result()
 
