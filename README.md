@@ -13,7 +13,8 @@ cd src/learn<br>
 python learn.py<br>
 
 <b>Boardクラス：</b><br>
-インデックスによるオセロ盤の表現（http://sealsoft.jp/thell/algorithm.html）<br>
+インデックスによるオセロ盤の表現<br>
+http://sealsoft.jp/thell/algorithm.html<br>
 
 <b>AIクラス：</b><br>
 Brainクラスの管理とAIによる着手処理<br>
